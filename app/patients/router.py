@@ -12,7 +12,7 @@ async def get_patients() -> list[PatientOut]:
     return list(DB["patients"].values())
 
 
-@router.get("{nhs_number}")
+@router.get("/{nhs_number}")
 async def get_patient(nhs_number: str) -> PatientOut:
     try:
         return controller.get_patient(nhs_number)
