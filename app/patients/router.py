@@ -1,26 +1,44 @@
-from fastapi import APIRouter, HTTPException, Response, status
-from app.database import DB
+from fastapi import APIRouter, HTTPException, status
 from app.patients import controller
-from app.patients.schemas import PatientIn, PatientOut
+from app.patients.exceptions import PatientAlreadyExistsError
+from app.patients.schemas import PatientIn, PatientOut, PatientTransfer
 
 
-router = APIRouter()
+router = APIRouter(prefix="/patients", tags=["patients"])
 
 
-@router.get("")
-async def get_patients() -> list[PatientOut]:
-    return list(DB["patients"].values())
-
-
-@router.get("/{nhs_number}")
-async def get_patient(nhs_number: str) -> PatientOut:
+@router.get("/{nhs_number}", response_model=PatientOut)
+async def get_patient(nhs_number: str):
     try:
-        return controller.get_patient(nhs_number)
-    except KeyError:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+        return await controller.get_patient(nhs_number)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
-@router.post("")
-async def post_patient(patient: PatientIn) -> Response:
-    controller.create_patient(patient)
-    return Response(status_code=status.HTTP_201_CREATED)
+@router.get("/", response_model=list[PatientOut])
+async def get_all_patients():
+    return await controller.get_all_patients()
+
+
+@router.post("/", response_model=PatientOut)
+async def create_patient(patient: PatientIn):
+    try:
+        return await controller.create_patient(patient)
+    except PatientAlreadyExistsError as e:
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(e))
+
+
+@router.put("/{nhs_number}", response_model=PatientOut)
+async def update_patient(nhs_number: str, patient: PatientIn):
+    try:
+        return await controller.update_patient(nhs_number, patient)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/transfer")
+async def transfer_patient(transfer: PatientTransfer):
+    try:
+        return await controller.transfer_patient(transfer)
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))

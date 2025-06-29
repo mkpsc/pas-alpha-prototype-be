@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: pas_alpha
+      POSTGRES_USER: pas_user
+      POSTGRES_PASSWORD: pas_password
+    ports:
+      - "5032:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pas_user -d pas_alpha"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://pas_user:pas_password@db:5032/pas_alpha
+      DATABASE_URL_LOCAL: postgresql://pas_user:pas_password@localhost:5032/pas_alpha
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/app
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+volumes:
+  postgres_data:

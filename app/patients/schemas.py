@@ -1,13 +1,27 @@
-from pydantic import BaseModel
+from datetime import date
 
-from app.fields import NHSNumber
+import uuid
+from app.fields import BaseCamelModel, NHSNumber
 
 
-class PatientIn(BaseModel):
-    initials: str
+class PatientIn(BaseCamelModel):
     nhs_number: NHSNumber
+    first_name: str
+    last_name: str
+    date_of_birth: date | None = None
 
 
-class PatientOut(BaseModel):
-    initials: str
+class PatientOut(BaseCamelModel):
+    id: uuid.UUID
     nhs_number: NHSNumber
+    first_name: str
+    last_name: str
+    date_of_birth: date | None = None
+
+
+class PatientTransfer(BaseCamelModel):
+    patient_nhs_number: NHSNumber
+    from_provider_id: str
+    to_provider_id: str
+    transfer_date: date
+    reason: str
